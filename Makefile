@@ -5,7 +5,7 @@ RAYFLAGS=`pkg-config --cflags --libs raylib`
 
 
 all: clean main
-	$(EXE) 30
+	$(EXE) 240
 
 main: main.cpp
 	$(CC) $(CXXFLAGS) -o $(EXE) $@.cpp $(RAYFLAGS)

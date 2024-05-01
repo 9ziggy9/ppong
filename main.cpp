@@ -2,7 +2,6 @@
 #include <raylib.h>
 #include <assert.h>
 
-
 #define CHANGE_ME_PADDING 10.0f
 struct Paddle {
   Color c;
@@ -10,7 +9,7 @@ struct Paddle {
   Paddle(float scr_width, float scr_height, float w, float h) {
     this->c = BLUE;
     this->rect = {
-      scr_width / 2,
+      scr_width / 2 - w / 2,
       scr_height - h - CHANGE_ME_PADDING,
       w, h
     };
@@ -18,15 +17,17 @@ struct Paddle {
 };
 
 struct Ball {
-  float r; float x; float y;
-  float dx_dt; float dy_dt;
+  float r;
+  Vector2 p;
+  Vector2 v;
   Color c;
   Ball(float r, float x, float y, float dx_dt, float dy_dt, Color c) {
     this->r = r;
-    this->x = x; this->y = y;
-    this->dx_dt = dx_dt;
-    this->dy_dt = dy_dt;
-    TraceLog(LOG_INFO, "Created ball @ (%f, %f).\n", this->x, this->y);
+    this->c = c;
+    this->p.x = x; this->p.y = y;
+    this->v.x = dx_dt;
+    this->v.y= dy_dt;
+    TraceLog(LOG_INFO, "Created ball @ (%f, %f).\n", this->p.x, this->p.y);
   }
   ~Ball(void) {
     TraceLog(LOG_INFO, "Deleted ball.\n");
@@ -47,8 +48,9 @@ struct Session {
 
   Paddle *paddle;
   void new_paddle(float w, float h) {
-    this->paddle = new Paddle(this->width, this->height, w, h);
+    this->paddle = new Paddle((float)this->width, (float)this->height, w, h);
   };
+  void translate_paddle(float dx) { this->paddle->rect.x += dx; };
 
   void toggle_pause(void) { this->pause = !this->pause; } 
   Session(int w, int h, const char *title) {
@@ -60,7 +62,7 @@ struct Session {
     this->dt = 1;
     this->origin = {0, 0};
     this->center = {(float) w / 2, (float) h / 2};
-    this->new_ball(30, this->center.x, this->center.y,
+    this->new_ball(15, this->center.x, this->center.y - 100,
                    0, 0, RED);
     this->new_paddle(150, 20);
   };
@@ -68,7 +70,7 @@ struct Session {
     std::cout << "Tearing down session...\n";
     CloseWindow();
     exit(EXIT_SUCCESS);
-  };
+  }// ;
 };
 
 
@@ -91,7 +93,7 @@ namespace render {
     DrawTextureV(render::bg_texture.texture, s.origin, tint);
   }
   void ball(Session &s) {
-    DrawCircle(s.ball->x, s.ball->y, s.ball->r, RED);
+    DrawCircle((int)s.ball->p.x, (int)s.ball->p.y, s.ball->r, RED);
   }
   void paddle(Session &s) {
     DrawRectangleRec(s.paddle->rect, s.paddle->c);
@@ -99,20 +101,54 @@ namespace render {
 }
 
 namespace physics {
-  static float g = 1.0f;
-  void apply_gravity(Session &s) {
-    s.ball->dy_dt += g * (s.dt);
-    s.ball->y     += s.ball->dy_dt * (s.dt);
+  static float g = 1000.0f;
+  void time_step(Session &s) { s.dt = GetFrameTime(); }
+  void apply_gravity(Session &s, float step) {
+    s.ball->p.y += s.ball->v.y * (step) + (0.5) * g * (step * step);
+    s.ball->v.y += g * (step);
+  }
+  void apply_rebound(Session &s) {
+    if (CheckCollisionCircleRec(s.ball->p, s.ball->r, s.paddle->rect)) {
+      s.ball->v.y = -s.ball->v.y;
+      s.ball->v.x = s.ball->p.x - s.paddle->rect.x - s.paddle->rect.width/2;
+      if (s.ball->p.y + s.ball->r >= s.paddle->rect.y) {
+        s.ball->p.y = s.paddle->rect.y - s.ball->r;
+      }
+    }
+  }
+  void update(Session &s) {
+    // Semi-fixed timestep for stability
+    // Reference: https://gafferongames.com/post/fix_your_timestep/
+    static float acc = 0.0f;
+    acc += s.dt;
+    const float step = 0.005f; // fixed physics time step
+
+    while (acc >= step) {
+      apply_gravity(s, step);
+      s.ball->p.x += s.ball->v.x * step;
+      apply_rebound(s);
+      acc -= step;
+    }
   }
 }
 
 void handle_keys(Session *s) {
-  int k = GetKeyPressed();
-  switch (k) {
-  case KEY_ESCAPE: case 'Q': delete s;
-  case KEY_SPACE: s->toggle_pause();
-  default: break;
+  static const float dx = 3;
+
+  if      (IsKeyDown(KEY_LEFT))  s->translate_paddle(-dx);
+  else if (IsKeyDown(KEY_RIGHT)) s->translate_paddle(dx);
+  else {
+    int kp = GetKeyPressed();
+    switch (kp) {
+    case KEY_SPACE: s->toggle_pause();   break;
+    case KEY_ESCAPE: case 'Q': delete s; break;
+    }
   }
+}
+
+namespace txt {
+  int font_sz_dialog = 20;
+  const char *paused = "PAUSED";
 }
 
 int main(int argc, char **argv) {
@@ -126,16 +162,23 @@ int main(int argc, char **argv) {
 
   while (!WindowShouldClose()) {
     handle_keys(session);
-    BeginDrawing();
+  BeginDrawing();
     if (!session->pause) {
-          render::bg(*session, DARKGRAY);
-          render::ball(*session);
-          render::paddle(*session);
-          physics::apply_gravity(*session);
+
+      render::bg(*session, DARKGRAY);
+      render::ball(*session);
+      render::paddle(*session);
+
+      physics::time_step(*session);
+      physics::update(*session);
+
     } else {
-      ClearBackground(BLUE);
+      int txt_width = MeasureText(txt::paused, txt::font_sz_dialog);
+      DrawText("PAUSED",
+               session->width / 2 - txt_width / 2,
+               session->height / 2, 20, GREEN);
     }
-    EndDrawing();
+  EndDrawing();
   }
 
   return EXIT_SUCCESS; // unreachable
