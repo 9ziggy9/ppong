@@ -1,13 +1,15 @@
+#include <cstdint>
 #include <iostream>
 #include <raylib.h>
 #include <assert.h>
+#include "color.h"
 
 #define CHANGE_ME_PADDING 10.0f
 struct Paddle {
   Color c;
   Rectangle rect;
   Paddle(float scr_width, float scr_height, float w, float h) {
-    this->c = BLUE;
+    this->c = color::purple;
     this->rect = {
       scr_width / 2 - w / 2,
       scr_height - h - CHANGE_ME_PADDING,
@@ -21,9 +23,13 @@ struct Ball {
   Vector2 p;
   Vector2 v;
   Color c;
+  uint8_t bounces;
+  bool self_destructing;
   Ball(float r, float x, float y, float dx_dt, float dy_dt, Color c) {
     this->r = r;
     this->c = c;
+    this->self_destructing = false;
+    this->bounces = 3;
     this->p.x = x; this->p.y = y;
     this->v.x = dx_dt;
     this->v.y= dy_dt;
@@ -45,6 +51,7 @@ struct Session {
   void new_ball(float r, float x, float y, float dx_dt, float dy_dt, Color c) {
     this->ball = new Ball(r, x, y, dx_dt, dy_dt, c);
   };
+  void self_destruct_sequence(void) { this->ball->self_destructing = true; }
 
   Paddle *paddle;
   void new_paddle(float w, float h) {
@@ -62,19 +69,17 @@ struct Session {
     this->dt = 1;
     this->origin = {0, 0};
     this->center = {(float) w / 2, (float) h / 2};
-    this->new_ball(15, this->center.x, this->center.y - 100,
-                   0, 0, RED);
+    this->new_ball(15, this->center.x, this->center.y - 100, 0, 0, color::aqua);
     this->new_paddle(150, 20);
   };
   ~Session() {
     std::cout << "Tearing down session...\n";
+    if (this->ball != nullptr) delete this->ball;
+    delete this->paddle;
     CloseWindow();
     exit(EXIT_SUCCESS);
-  }// ;
+  };
 };
-
-
-// confur
 
 namespace render {
   static RenderTexture2D bg_texture;
@@ -93,7 +98,20 @@ namespace render {
     DrawTextureV(render::bg_texture.texture, s.origin, tint);
   }
   void ball(Session &s) {
-    DrawCircle((int)s.ball->p.x, (int)s.ball->p.y, s.ball->r, RED);
+    if (s.ball == nullptr) return;
+    if (s.ball->self_destructing) {
+      static float acc        = 0.0f;
+      const float color_break = 4.0f;
+      acc += s.dt;
+      if (acc >= color_break) {
+        acc = 0;
+        s.ball->c = color::red;
+      }
+      if (acc == 0) {
+        s.ball->c = color::yellow;
+      }
+    }
+    DrawCircle((int)s.ball->p.x, (int)s.ball->p.y, s.ball->r, s.ball->c);
   }
   void paddle(Session &s) {
     DrawRectangleRec(s.paddle->rect, s.paddle->c);
@@ -108,12 +126,28 @@ namespace physics {
     s.ball->v.y += g * (step);
   }
   void apply_rebound(Session &s) {
+    if (s.ball == nullptr) return;
     if (CheckCollisionCircleRec(s.ball->p, s.ball->r, s.paddle->rect)) {
-      s.ball->v.y = -s.ball->v.y;
-      s.ball->v.x = s.ball->p.x - s.paddle->rect.x - s.paddle->rect.width/2;
+      s.ball->v.y *= -1;
+      s.ball->v.x = 4.0 * (s.ball->p.x -
+                           s.paddle->rect.x -
+                           s.paddle->rect.width/2);
       if (s.ball->p.y + s.ball->r >= s.paddle->rect.y) {
         s.ball->p.y = s.paddle->rect.y - s.ball->r;
       }
+      switch (--s.ball->bounces) {
+      case 2: s.ball->c = color::green;   return;
+      case 1: s.ball->c = color::orange;  return;
+      case 0: s.self_destruct_sequence(); return;
+      default:                            return;
+      }
+    }
+  }
+  void apply_boundaries(Session &s) {
+    if (s.ball == nullptr) return;
+    if ((s.ball->p.x + s.ball->r) >= s.width || (s.ball->p.x - s.ball->r) <= 0)
+    {
+      s.ball->v.x *= -1;
     }
   }
   void update(Session &s) {
@@ -122,18 +156,20 @@ namespace physics {
     static float acc = 0.0f;
     acc += s.dt;
     const float step = 0.005f; // fixed physics time step
-
-    while (acc >= step) {
-      apply_gravity(s, step);
-      s.ball->p.x += s.ball->v.x * step;
-      apply_rebound(s);
-      acc -= step;
+    if (s.ball != nullptr) {
+      while (acc >= step) {
+        apply_gravity(s, step);
+        s.ball->p.x += s.ball->v.x * step;
+        apply_rebound(s);
+        apply_boundaries(s);
+        acc -= step;
+      }
     }
   }
 }
 
 void handle_keys(Session *s) {
-  static const float dx = 3;
+  static const float dx = 1.5f;
 
   if      (IsKeyDown(KEY_LEFT))  s->translate_paddle(-dx);
   else if (IsKeyDown(KEY_RIGHT)) s->translate_paddle(dx);
@@ -147,38 +183,58 @@ void handle_keys(Session *s) {
 }
 
 namespace txt {
-  int font_sz_dialog = 20;
+  int font_sz_dialog = 80;
+  int font_sz_debug  = 16;
   const char *paused = "PAUSED";
+  void debug(Session &s) {
+    char txt_dt[32];
+    char txt_fps[32];
+    std::sprintf(txt_fps, "fps: %d", GetFPS());
+    std::sprintf(txt_dt, "dt: %.4f", s.dt);
+    int txt_dt_width  = MeasureText(txt_dt, font_sz_debug) + 4;
+    int txt_fps_width = MeasureText(txt_fps, font_sz_debug) + 4;
+    DrawText(txt_dt, s.width - txt_dt_width, 1, font_sz_debug, GREEN);
+    DrawText(txt_fps, s.width - txt_fps_width,
+             1 + font_sz_debug, font_sz_debug, GREEN);
+  }
 }
 
 int main(int argc, char **argv) {
   assert(argc == 2 && "[USAGE]: provide fps bruh\n");
 
-  Session *session = new Session(640, 480, "ppong");
+  Session *session = new Session(960, 720, "ppong");
   render::load_bg_texture(session->width,
                           session->height, 16);
 
   SetTargetFPS(atoi(argv[1]));
 
+  Font font_main = LoadFont("resources/font/setbackt.ttf");
+
   while (!WindowShouldClose()) {
     handle_keys(session);
-  BeginDrawing();
-    if (!session->pause) {
+    BeginDrawing();
+      if (!session->pause) {
+        render::bg(*session, DARKGRAY);
+        render::ball(*session);
+        render::paddle(*session);
 
-      render::bg(*session, DARKGRAY);
-      render::ball(*session);
-      render::paddle(*session);
+        physics::time_step(*session);
+        physics::update(*session);
 
-      physics::time_step(*session);
-      physics::update(*session);
-
-    } else {
-      int txt_width = MeasureText(txt::paused, txt::font_sz_dialog);
-      DrawText("PAUSED",
-               session->width / 2 - txt_width / 2,
-               session->height / 2, 20, GREEN);
-    }
-  EndDrawing();
+        txt::debug(*session);
+      } else {
+        DrawRectangle(0, 0,
+                      session->width, session->height,
+                      (Color){0, 0, 0, 1}); // overlay
+        int txt_width = MeasureText(txt::paused, txt::font_sz_dialog);
+        DrawTextEx(font_main, "PAUSED",
+                   Vector2{((float)session->width -
+                            (float)txt_width) / 2,
+                           ((float)session->height -
+                            (float)txt::font_sz_dialog) / 2},
+                   txt::font_sz_dialog, 10, GREEN);
+      }
+    EndDrawing();
   }
 
   return EXIT_SUCCESS; // unreachable
