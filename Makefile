@@ -2,19 +2,15 @@ EXE=./run
 CC=g++
 CXXFLAGS=-Wall -Wextra -pedantic -Wconversion
 RAYFLAGS=`pkg-config --cflags --libs raylib`
-
+OBJS=session.o
 
 all: clean main
-	$(EXE) 240
 
-main: main.cpp
-	$(CC) $(CXXFLAGS) -o $(EXE) $@.cpp $(RAYFLAGS)
+main: $(OBJS) main.cpp
+	$(CC) $(CXXFLAGS) -o $(EXE) main.cpp $(RAYFLAGS) $(OBJS)
 
-ass: main.c
-	gcc $(CXXFLAGS) -o $(EXE).asm -S $<
-
-main_c: main.c
-	gcc $(CXXFLAGS) -o $(EXE) $<
+%.o: %.cpp
+	$(CC) $(CXXFLAGS) -c $< -o $@ $(RAYFLAGS)
 
 clean:
 	rm -rf $(EXE) *.o *.i *.asm
