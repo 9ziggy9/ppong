@@ -17,4 +17,4 @@ test: test.cpp
 	$(CC) $(CXXFLAGS) -c $< -o $@ $(RAYFLAGS)
 
 clean:
-	rm -rf $(EXE) *.o *.i *.asm
+	rm -rf $(EXE) *.o *.i *.asm test
