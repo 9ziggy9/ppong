@@ -1,3 +1,4 @@
 CompileFlags:
   Add: 
     - "-lraylib"
+    - "-std=c++20"

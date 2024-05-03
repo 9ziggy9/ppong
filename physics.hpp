@@ -2,17 +2,20 @@
 #define PPONG_PHYSICS_H_
 #include "session.hpp"
 #include "color.hpp"
+#include "sound.hpp"
 
 namespace physics {
   inline float g = 1000.0f;
   inline void time_step(Session &s) { s.dt = GetFrameTime(); }
   inline void apply_gravity(Session &s, float step) {
+    if (s.ball == nullptr) return;
     s.ball->p.y += s.ball->v.y * (step) + (0.5f) * g * (step * step);
     s.ball->v.y += g * (step);
   }
   inline void apply_rebound(Session &s) {
     if (s.ball == nullptr) return;
     if (CheckCollisionCircleRec(s.ball->p, s.ball->r, s.paddle->rect)) {
+      sound::play_sound(sound::sound_beep);
       s.ball->v.y *= -1;
       s.ball->v.x = 4.0f * (s.ball->p.x -
                            s.paddle->rect.x -
@@ -35,6 +38,8 @@ namespace physics {
     {
       s.ball->v.x *= -1;
     }
+    if ((s.ball->p.y + s.ball->r) >= (float) s.height) s.md = mode::GAMEOVER;
+    else if ((s.ball->p.y - s.ball->r) <= 0)           s.ball->v.y *= -1;
   }
   inline void update(Session &s) {
     // Semi-fixed timestep for stability

@@ -4,6 +4,7 @@
 #include "session.hpp"
 #include "physics.hpp"
 #include "render.hpp"
+#include "sound.hpp"
 
 void handle_keys(Session *);
 
@@ -15,40 +16,39 @@ int main(int argc, char **argv) {
                           session->height, 16);
 
   SetTargetFPS(atoi(argv[1]));
-
   Font font_main = LoadFont("resources/font/setbackt.ttf");
+  sound::init();
 
   while (!WindowShouldClose()) {
     handle_keys(session);
     BeginDrawing();
-      if (!session->pause) {
+      switch(session->md) {
+      case mode::RUNNING:
+        sound::loop_song(sound::music_main);
         render::bg(*session, DARKGRAY);
         render::ball(*session);
         render::paddle(*session);
-
         physics::time_step(*session);
         physics::update(*session);
-
         txt::debug(*session);
-      } else {
-        DrawRectangle(0, 0, session->width, session->height, Color{0, 0, 0, 1});
-        int txt_width = MeasureText(txt::paused, txt::font_sz_dialog);
-        DrawTextEx(font_main, "PAUSED",
-                   Vector2{((float)session->width -
-                            (float)txt_width) / 2,
-                           ((float)session->height -
-                            (float)txt::font_sz_dialog) / 2},
-                   (float)txt::font_sz_dialog, 10, GREEN);
+        break;
+      case mode::PAUSED:
+        render::menu_pause(*session, font_main);
+        break;
+      case mode::GAMEOVER: {
+        ClearBackground(BLACK);
+        render::menu_over(*session, font_main);
+        sound::play_once(sound::sound_over, false);
+      }
       }
     EndDrawing();
   }
-
   return EXIT_SUCCESS; // unreachable
 }
 
 void handle_keys(Session *s) {
-  static const float dx = 1.5f;
-
+  static const float dx_dt = 400.0f;
+  const float dx = dx_dt * GetFrameTime();
   if      (IsKeyDown(KEY_LEFT))  s->translate_paddle(-dx);
   else if (IsKeyDown(KEY_RIGHT)) s->translate_paddle(dx);
   else {

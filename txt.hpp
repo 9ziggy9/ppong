@@ -6,7 +6,9 @@
 namespace txt {
   inline int font_sz_dialog = 80;
   inline int font_sz_debug  = 16;
-  inline const char *paused = "PAUSED";
+  inline const char *paused     = "PAUSED";
+  inline const char *gameover   = "GAME OVER";
+  inline const char *restart    = "(space to play again)";
   inline void debug(Session &s) {
     char txt_dt[32];
     char txt_fps[32];

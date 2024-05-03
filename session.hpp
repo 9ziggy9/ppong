@@ -17,9 +17,15 @@ struct Ball {
   Ball(float, float, float, float, float, Color); ~Ball(void);
 };
 
+enum struct mode {
+  RUNNING,
+  PAUSED,
+  GAMEOVER,
+};
+
 struct Session {
   int width; int height;
-  bool pause;
+  mode md;
   Vector2 origin;
   Vector2 center;
   float dt;
@@ -30,6 +36,7 @@ struct Session {
   void new_paddle(float, float);
   void translate_paddle(float);
   void toggle_pause(void);
+  void splode(void);
   Session(int w, int h, const char *title); ~Session(void);
 };
 
