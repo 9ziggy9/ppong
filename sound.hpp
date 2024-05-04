@@ -9,7 +9,7 @@ namespace sound {
   inline Music music_main;
   inline void init(void) {
     InitAudioDevice();
-    sound_splode = LoadSound("resources/sound/splode.flac");
+    sound_splode = LoadSound("resources/sound/splode.wav");
     sound_over   = LoadSound("resources/sound/over.wav");
     sound_beep   = LoadSound("resources/sound/beep.mp3");
     music_main   = LoadMusicStream("resources/sound/main.wav");

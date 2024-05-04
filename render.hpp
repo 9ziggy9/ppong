@@ -34,7 +34,7 @@ namespace render {
         b->acc += s.dt;
         b->countdown -= s.dt;
         if (b->countdown <= 0.0f) {
-          sound::play_sound(sound::sound_beep);
+          sound::play_sound(sound::sound_splode);
           s.expls.emplace_back(b->p, b->r);
           b = s.balls.erase(b);
           continue;
