@@ -1,13 +1,16 @@
 #ifndef PPONG_RENDER_H_
 #define PPONG_RENDER_H_
-#include "session.hpp"
-#include "color.hpp"
-#include "txt.hpp"
 #include <raylib.h>
 #include <raymath.h>
 
+#include "session.hpp"
+#include "color.hpp"
+#include "txt.hpp"
+#include "sound.hpp"
+
 namespace render {
   inline RenderTexture2D bg_texture;
+
   inline void load_bg_texture(int w, int h, int sz) {
     bg_texture = LoadRenderTexture(w, h);
     BeginTextureMode(bg_texture);
@@ -19,35 +22,51 @@ namespace render {
     }
     EndTextureMode();
   }
+
   inline void bg(Session &s, Color tint) {
     DrawTextureV(render::bg_texture.texture, s.origin, tint);
   }
-  inline void ball(Session &s) {
-    if (s.ball == nullptr) return;
-    if (s.ball->self_destructing) {
-      static float countdown  = 3.0f;
-      static float acc        = 0.0f;
-      const float bp          = 0.16f;
-      acc += s.dt;
-      countdown -= s.dt;
-      if (countdown <= 0.0f) s.splode();
-      else {
-        // TODO: generalized flashing function
-        if (acc <= 0.33f * bp)
-          s.ball->c = color::red;
-        else if ((acc > 0.33f * bp) && (acc <= 0.66f * bp))
-          s.ball->c = color::yellow;
-        else if ((acc > 0.66f * bp) && (acc < 1.0f * bp))
-          s.ball->c = color::dark_brown;
-        else
-          acc = 0.0f;
+
+  inline void balls(Session &s) {
+    for (auto b = s.balls.begin(); b != s.balls.end();) {
+      if (b->self_destructing) {
+        const float bp = 0.16f;
+        b->acc += s.dt;
+        b->countdown -= s.dt;
+        if (b->countdown <= 0.0f) {
+          sound::play_sound(sound::sound_beep);
+          s.expls.emplace_back(b->p, b->r);
+          b = s.balls.erase(b);
+          continue;
+        } else { // TODO: generalized flashing function
+          if (b->acc <= 0.33f * bp)
+            b->c = color::red;
+          else if ((b->acc > 0.33f * bp) && (b->acc <= 0.66f * bp))
+            b->c = color::yellow;
+          else if ((b->acc > 0.66f * bp) && (b->acc < 1.0f * bp))
+            b->c = color::dark_brown;
+          else
+            b->acc = 0.0f;
+        }
       }
+      DrawCircle((int)b->p.x, (int)b->p.y, b->r, b->c);
+      ++b;
     }
-    DrawCircle((int)s.ball->p.x, (int)s.ball->p.y, s.ball->r, s.ball->c);
   }
+
+  inline void splodies(Session &s) {
+    for (auto it = s.expls.begin(); it != s.expls.end();) {
+      it->update(s.dt);
+      it->draw();
+      if (it->is_finished()) it = s.expls.erase(it);
+      else ++it;
+    }
+  }
+
   inline void paddle(Session &s) {
     DrawRectangleRec(s.paddle->rect, s.paddle->c);
   }
+
   inline void menu_pause(Session &s, Font font) {
     DrawRectangle(0, 0, s.width, s.height, Color{0, 0, 0, 1});
     int txt_width = MeasureText(txt::paused, txt::font_sz_dialog);
@@ -59,6 +78,7 @@ namespace render {
                (float)txt::font_sz_dialog, 10, GREEN);
     
   }
+
   inline void menu_over(Session &session, Font font) {
     DrawRectangle(0, 0, session.width, session.height, Color{0, 0, 0, 1});
     int txt_go_width  = MeasureText(txt::gameover, txt::font_sz_dialog);

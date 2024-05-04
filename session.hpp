@@ -2,6 +2,8 @@
 #define PPONG_SESSION_H_
 #include <raylib.h>
 #include <cstdint>
+#include <vector>
+#include "effects.hpp"
 
 #define CHANGE_ME_PADDING 10.0f
 
@@ -14,7 +16,10 @@ struct Ball {
   float r; Vector2 p; Vector2 v;
   Color c; uint8_t bounces;
   bool self_destructing;
-  Ball(float, float, float, float, float, Color); ~Ball(void);
+  float countdown;
+  float acc;
+  Ball(float, float, float, float, float, Color);
+  ~Ball(void);
 };
 
 enum struct mode {
@@ -29,14 +34,14 @@ struct Session {
   Vector2 origin;
   Vector2 center;
   float dt;
-  Ball *ball;
+  std::vector<Ball> balls;
+  std::vector<effects::Explosion> expls;
   void new_ball(float, float, float, float, float, Color);
-  void self_destruct_sequence(void);
+  void self_destruct_sequence(std::vector<Ball>::iterator);
   Paddle *paddle;
   void new_paddle(float, float);
   void translate_paddle(float);
   void toggle_pause(void);
-  void splode(void);
   Session(int w, int h, const char *title); ~Session(void);
 };
 

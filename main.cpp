@@ -26,8 +26,9 @@ int main(int argc, char **argv) {
       case mode::RUNNING:
         sound::loop_song(sound::music_main);
         render::bg(*session, DARKGRAY);
-        render::ball(*session);
+        render::balls(*session);
         render::paddle(*session);
+        render::splodies(*session);
         physics::time_step(*session);
         physics::update(*session);
         txt::debug(*session);
