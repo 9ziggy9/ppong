@@ -31,12 +31,14 @@ enum struct mode {
 struct Session {
   int width; int height;
   mode md;
+  uint8_t lvl;
   Vector2 origin;
   Vector2 center;
   float dt;
   std::vector<Ball> balls;
   std::vector<effects::Explosion> expls;
   void new_ball(float, float, float, float, float, Color);
+  void load_next_level(void);
   void self_destruct_sequence(std::vector<Ball>::iterator);
   Paddle *paddle;
   void new_paddle(float, float);

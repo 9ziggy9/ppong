@@ -30,7 +30,7 @@ namespace physics {
         case 1: it->c = color::orange;        break;
         case 0: s.self_destruct_sequence(it); break;
         default:                              break;
-        }
+      }
     }
   }
 
@@ -60,6 +60,7 @@ namespace physics {
         acc -= step;
       }
     }
+    if (s.balls.size() == 0) s.load_next_level();
   }
 }
 

@@ -12,6 +12,8 @@ int main(int argc, char **argv) {
   assert(argc == 2 && "[USAGE]: provide fps bruh\n");
 
   Session *session = new Session(960, 720, "ppong");
+  session->load_next_level();
+
   render::load_bg_texture(session->width,
                           session->height, 16);
 

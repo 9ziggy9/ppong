@@ -59,7 +59,7 @@ namespace render {
       it->update(s.dt);
       it->draw();
       if (it->is_finished()) it = s.expls.erase(it);
-      else ++it;
+      else ++it; 
     }
   }
 
