@@ -36,12 +36,11 @@ namespace physics {
 
   inline void apply_boundaries(Session &s) {
     for (auto &b : s.balls) {
-      if ((b.p.x + b.r) >= (float) s.width || (b.p.x - b.r) <= 0)
-        b.v.x *= -1;
-      if ((b.p.y + b.r) >= (float) s.height)
+      if ((b.p.x + b.r) >= (float) s.width || (b.p.x - b.r) <= 0) b.v.x *= -1;
+      if ((b.p.y + b.r) >= (float) s.height) {
         s.md = mode::GAMEOVER;
-      else if ((b.p.y - b.r) <= 0)
-        b.v.y *= -1;
+        sound::play_sound(sound::sound_over);
+      } else if ((b.p.y - b.r) <= 0) b.v.y *= -1;
     }
   }
 

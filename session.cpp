@@ -3,6 +3,7 @@
 
 #include "session.hpp"
 #include "color.hpp"
+#include "sound.hpp"
 
 Paddle::Paddle(float scr_width, float scr_height, float w, float h) {
   this->c = color::purple;
@@ -48,7 +49,7 @@ void Session::toggle_pause(void) {
     : mode::PAUSED;
 } 
 
-#define PADDLE_INC 10
+#define PADDLE_INC 20
 #define MIN_RADIUS  5 
 #define MAX_RADIUS 30 
 #define X_REGION   50
@@ -77,6 +78,7 @@ void Session::reset(void) {
   delete this->paddle;
   this->balls.clear();
   this->new_paddle(150,20);
+  SeekMusicStream(sound::music_main, 0.0f);
   this->lvl = 0;
   this->md = mode::RUNNING;
 }

@@ -7,6 +7,7 @@
 #include "color.hpp"
 #include "txt.hpp"
 #include "sound.hpp"
+#include "animation.hpp"
 
 namespace render {
   inline RenderTexture2D bg_texture;
@@ -30,7 +31,7 @@ namespace render {
   inline void balls(Session &s) {
     for (auto b = s.balls.begin(); b != s.balls.end();) {
       if (b->self_destructing) {
-        const float bp = 0.16f;
+        const float bp = 0.3f;
         b->acc += s.dt;
         b->countdown -= s.dt;
         if (b->countdown <= 0.0f) {
@@ -55,13 +56,23 @@ namespace render {
   }
 
   inline void splodies(Session &s) {
+    const float bp = 1.0f / (float)GetFPS(); // frame breakpoint
     for (auto it = s.expls.begin(); it != s.expls.end();) {
-      it->update(s.dt);
-      it->draw();
-      if (it->is_finished()) it = s.expls.erase(it);
-      else ++it; 
+      if (it->frame_count < animation::explosion.num_frames) {
+        it->acc += s.dt;
+        if (it->acc >= bp) {
+          animation::req_frame_at(Vector2Subtract(it->position, s.center),
+                                  animation::explosion, it->frame_count);
+          it->acc = 0;
+          it->frame_count++;
+        }
+        ++it;
+      } else {
+        it = s.expls.erase(it);
+      }
     }
   }
+
 
   inline void paddle(Session &s) {
     DrawRectangleRec(s.paddle->rect, s.paddle->c);
