@@ -57,7 +57,14 @@ void handle_keys(Session *s) {
   else {
     int kp = GetKeyPressed();
     switch (kp) {
-    case KEY_SPACE: s->toggle_pause();   break;
+    case KEY_SPACE: {
+      if (s->md == mode::GAMEOVER) {
+        s->reset();
+        s->load_next_level();
+      } else {
+        s->toggle_pause();
+      }
+    } break;
     case KEY_ESCAPE: case 'Q': delete s; break;
     }
   }

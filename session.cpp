@@ -1,6 +1,8 @@
+#include <iostream>
+#include <random>
+
 #include "session.hpp"
 #include "color.hpp"
-#include <iostream>
 
 Paddle::Paddle(float scr_width, float scr_height, float w, float h) {
   this->c = color::purple;
@@ -46,16 +48,37 @@ void Session::toggle_pause(void) {
     : mode::PAUSED;
 } 
 
-#define PADDLE_INC 60
+#define PADDLE_INC 10
+#define MIN_RADIUS  5 
+#define MAX_RADIUS 30 
+#define X_REGION   50
+
 void Session::load_next_level(void) {
   int balls_left = ++this->lvl;
   this->paddle->rect.width += this->lvl * PADDLE_INC;
   this->paddle->rect.x = (float)this->width / 2 - this->paddle->rect.width / 2;
+
+  std::random_device rd;  
+  std::mt19937 gen(rd()); 
+  std::uniform_real_distribution<> x_dist((float)(this->width) / 2 - X_REGION,
+                                          (float)(this->width) / 2 + X_REGION);
+  std::uniform_real_distribution<> y_dist((float)(this->height) / 8,
+                                          (float)(this->height) / 4);
+  std::uniform_real_distribution<> radius_dist(MIN_RADIUS, MAX_RADIUS);
+
   while (--balls_left >= 0)
-    this->new_ball(10,
-                   this->center.x + (float) balls_left * 15,
-                   this->center.y - 100,
-                   0, 0, color::aqua);
+    this->new_ball((float)radius_dist(gen),
+                   (float)x_dist(gen),
+                   (float)y_dist(gen),
+                   0, 0, color::aqua); 
+}
+
+void Session::reset(void) {
+  delete this->paddle;
+  this->balls.clear();
+  this->new_paddle(150,20);
+  this->lvl = 0;
+  this->md = mode::RUNNING;
 }
 
 Session::Session(int w, int h, const char *title) {

@@ -3,6 +3,7 @@
 #include <raylib.h>
 #include <cstdint>
 #include <vector>
+
 #include "effects.hpp"
 
 #define CHANGE_ME_PADDING 10.0f
@@ -44,7 +45,9 @@ struct Session {
   void new_paddle(float, float);
   void translate_paddle(float);
   void toggle_pause(void);
-  Session(int w, int h, const char *title); ~Session(void);
+  Session(int w, int h, const char *title);
+  void reset(void);
+  ~Session(void);
 };
 
 #endif // PPONG_SESSION_H_
