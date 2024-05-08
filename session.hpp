@@ -41,9 +41,10 @@ struct Session {
   void new_ball(float, float, float, float, float, Color);
   void load_next_level(void);
   void self_destruct_sequence(std::vector<Ball>::iterator);
-  Paddle *paddle;
-  void new_paddle(float, float);
-  void translate_paddle(float);
+  Paddle *paddle_r;
+  Paddle *paddle_l;
+  void new_paddles(float, float);
+  void translate_paddle(float, Paddle *);
   void toggle_pause(void);
   Session(int w, int h, const char *title);
   void reset(void);

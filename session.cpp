@@ -26,9 +26,7 @@ Ball::Ball(float r, float x, float y, float dx_dt, float dy_dt, Color c) {
   this->v.y = dy_dt;
   TraceLog(LOG_INFO, "Created ball @ (%f, %f).\n", this->p.x, this->p.y);
 }
-Ball::~Ball(void) {
-  TraceLog(LOG_INFO, "Deleted ball.\n");
-}
+Ball::~Ball(void) {}
 
 void Session::new_ball(float r,
                        float x, float y,
@@ -39,26 +37,25 @@ void Session::new_ball(float r,
 void Session::self_destruct_sequence(std::vector<Ball>::iterator it) {
   it->self_destructing = true;
 }
-void Session::new_paddle(float w, float h) {
-  this->paddle = new Paddle((float)this->width, (float)this->height, w, h);
+void Session::new_paddles(float w, float h) {
+  this->paddle_r = new Paddle((float)this->width * 1.5f,
+                              (float)this->height, w, h);
+  this->paddle_l = new Paddle((float)this->width * 0.5f,
+                              (float)this->height, w, h);
 }
-void Session::translate_paddle(float dx) { this->paddle->rect.x += dx; };
+void Session::translate_paddle(float dx, Paddle *p) { p->rect.x += dx; };
 void Session::toggle_pause(void) {
   this->md = (this->md == mode::PAUSED)
     ? mode::RUNNING
     : mode::PAUSED;
 } 
 
-#define PADDLE_INC 20
 #define MIN_RADIUS  5 
 #define MAX_RADIUS 30 
 #define X_REGION   50
 
 void Session::load_next_level(void) {
   int balls_left = ++this->lvl;
-  this->paddle->rect.width += this->lvl * PADDLE_INC;
-  this->paddle->rect.x = (float)this->width / 2 - this->paddle->rect.width / 2;
-
   std::random_device rd;  
   std::mt19937 gen(rd()); 
   std::uniform_real_distribution<> x_dist((float)(this->width) / 2 - X_REGION,
@@ -75,17 +72,19 @@ void Session::load_next_level(void) {
 }
 
 void Session::reset(void) {
-  delete this->paddle;
+  delete this->paddle_r;
+  delete this->paddle_l;
   this->balls.clear();
-  this->new_paddle(150,20);
+  this->new_paddles(150,20);
   SeekMusicStream(sound::music_main, 0.0f);
   this->lvl = 0;
   this->md = mode::RUNNING;
 }
 
 Session::Session(int w, int h, const char *title) {
+  SetConfigFlags(FLAG_MSAA_4X_HINT);
   InitWindow(w, h, title);
-  if(!IsWindowReady()) exit(EXIT_FAILURE);
+  if (!IsWindowReady()) exit(EXIT_FAILURE);
   this->md     = mode::PAUSED;
   this->lvl    = 0;
   this->width  = w;
@@ -93,11 +92,12 @@ Session::Session(int w, int h, const char *title) {
   this->dt     = 1;
   this->origin = {0, 0};
   this->center = {(float) w / 2, (float) h / 2};
-  this->new_paddle(150, 20);
+  this->new_paddles(150, 20);
 };
 
 Session::~Session(void) {
-  std::cout << "Tearing down session...\n";
+  delete this->paddle_r;
+  delete this->paddle_l;
   CloseWindow();
   exit(EXIT_SUCCESS);
 };

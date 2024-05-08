@@ -50,7 +50,9 @@ namespace render {
             b->acc = 0.0f;
         }
       }
+      // DrawCircle((int)b->p.x, (int)b->p.y, b->r + 2, color::foreground);
       DrawCircle((int)b->p.x, (int)b->p.y, b->r, b->c);
+      DrawCircleLines((int)b->p.x, (int)b->p.y, b->r + 2, color::foreground);
       ++b;
     }
   }
@@ -74,8 +76,11 @@ namespace render {
   }
 
 
-  inline void paddle(Session &s) {
-    DrawRectangleRec(s.paddle->rect, s.paddle->c);
+  inline void paddles(Session &s) {
+    DrawRectangleRounded(s.paddle_r->rect, 1.0f, 1, color::dark_brown);
+    DrawRectangleRoundedLines(s.paddle_r->rect, 1.5f, 1, 2, color::light_brown);
+    DrawRectangleRounded(s.paddle_l->rect, 1.0f, 1, color::light_brown);
+    DrawRectangleRoundedLines(s.paddle_l->rect, 1.5f, 1, 2, color::dark_brown);
   }
 
   inline void menu_pause(Session &s, Font font) {

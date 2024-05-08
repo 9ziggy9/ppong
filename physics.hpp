@@ -16,20 +16,36 @@ namespace physics {
     }
   }
 
-  inline void apply_rebound(Session &s) {
-    for (auto it = s.balls.begin(); it != s.balls.end(); ++it)
-      if (CheckCollisionCircleRec(it->p, it->r, s.paddle->rect)) {
+  inline void apply_rebound(Session &s) { // TODO: refactor
+    for (auto it = s.balls.begin(); it != s.balls.end(); ++it) {
+      if (CheckCollisionCircleRec(it->p, it->r, s.paddle_r->rect)) {
         sound::play_sound(sound::sound_beep);
         it->v.y *= -1;
-        it->v.x = 4.0f*(it->p.x - s.paddle->rect.x - s.paddle->rect.width / 2);
-        if (it->p.y + it->r >= s.paddle->rect.y) {
-          it->p.y = s.paddle->rect.y - it->r;
+        it->v.x = 4.0f * (it->p.x - s.paddle_r->rect.x
+                          - s.paddle_r->rect.width / 2);
+        if (it->p.y + it->r >= s.paddle_r->rect.y) {
+          it->p.y = s.paddle_r->rect.y - it->r;
         }
         switch (--it->bounces) {
         case 2: it->c = color::green;         break;
         case 1: it->c = color::orange;        break;
         case 0: s.self_destruct_sequence(it); break;
         default:                              break;
+        }
+      } else if (CheckCollisionCircleRec(it->p, it->r, s.paddle_l->rect)) {
+        sound::play_sound(sound::sound_beep);
+        it->v.y *= -1;
+        it->v.x = 4.0f * (it->p.x - s.paddle_l->rect.x
+                          - s.paddle_l->rect.width / 2);
+        if (it->p.y + it->r >= s.paddle_l->rect.y) {
+          it->p.y = s.paddle_l->rect.y - it->r;
+        }
+        switch (--it->bounces) {
+        case 2: it->c = color::green;         break;
+        case 1: it->c = color::orange;        break;
+        case 0: s.self_destruct_sequence(it); break;
+        default:                              break;
+        }
       }
     }
   }

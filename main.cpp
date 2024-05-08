@@ -32,7 +32,7 @@ void handle_keys(Session *);
           sound::loop_song(sound::music_main);
           render::bg(*session, DARKGRAY);
           render::balls(*session);
-          render::paddle(*session);
+          render::paddles(*session);
           render::splodies(*session);
           physics::time_step(*session);
           physics::update(*session);
@@ -78,8 +78,10 @@ void handle_keys(Session *);
 void handle_keys(Session *s) {
   static const float dx_dt = 750.0f;
   const float dx = dx_dt * GetFrameTime();
-  if      (IsKeyDown(KEY_LEFT))  s->translate_paddle(-dx);
-  else if (IsKeyDown(KEY_RIGHT)) s->translate_paddle(dx);
+  if      (IsKeyDown(KEY_LEFT))  s->translate_paddle(-dx, s->paddle_r);
+  else if (IsKeyDown(KEY_RIGHT)) s->translate_paddle(dx,  s->paddle_r);
+  else if (IsKeyDown(KEY_A))     s->translate_paddle(-dx, s->paddle_l);
+  else if (IsKeyDown(KEY_D))     s->translate_paddle(dx,  s->paddle_l);
   else {
     int kp = GetKeyPressed();
     switch (kp) {
@@ -91,7 +93,9 @@ void handle_keys(Session *s) {
         s->toggle_pause();
       }
     } break;
-    case KEY_ESCAPE: case 'Q': delete s; break;
+    case KEY_ESCAPE: case 'Q':
+      delete s;
+      break;
     }
   }
 }
